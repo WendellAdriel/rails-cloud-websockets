@@ -1,0 +1,3 @@
+production:
+  adapter: any_cable
+  channel_prefix: existing_anycable

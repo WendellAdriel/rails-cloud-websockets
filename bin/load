@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import json
+import os
+import subprocess
+import time
+
+root = Path(__file__).resolve().parent.parent
+result = root / ".localfiles/results/load.json"
+result.parent.mkdir(parents=True, exist_ok=True)
+names = ["rails-cloud-websockets-rails1-1", "rails-cloud-websockets-rails2-1", "rails-cloud-websockets-reverb-1"]
+def stats():
+    output = subprocess.check_output(["docker", "stats", "--no-stream", "--format", "{{json .}}", *names], text=True)
+    return [json.loads(line) for line in output.splitlines()]
+before = stats()
+args = ["docker", "run", "--rm", "--network", "host", "-e", "NODE_EXTRA_CA_CERTS=/certs/ca.pem", "-e", f'DEMO_URL={os.environ.get("DEMO_URL", "https://cloud-ws.localhost:3443")}', "-e", f'CLIENTS={os.environ.get("CLIENTS", "200")}', "-v", "rails-cloud-websockets_certs:/certs:ro", "-v", f"{root}/test:/test:ro", "node:24-bookworm-slim", "node", "/test/protocol/load.mjs"]
+process = subprocess.Popen(args, cwd=root, text=True, stdout=subprocess.PIPE)
+samples = []
+while process.poll() is None:
+    samples.append(stats())
+    time.sleep(0.2)
+output, _ = process.communicate()
+if process.returncode:
+    raise SystemExit(process.returncode)
+data = json.loads(output)
+data["dockerSamples"] = samples
+data["dockerBefore"] = before
+data["dockerAfter"] = stats()
+result.write_text(json.dumps(data, indent=2) + "\n")
+print(output)
