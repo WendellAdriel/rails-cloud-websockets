@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "esbuild app/javascript/application.js app/javascript/native_worker.js --bundle --format=esm --outdir=app/assets/builds --minify"
+  },
+  "dependencies": {
+    "@rails/actioncable": "8.1.400",
+    "@anycable/web": "1.1.1",
+    "@hotwired/turbo": "^8.0.0",
+    "@hotwired/turbo-rails": "^8.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

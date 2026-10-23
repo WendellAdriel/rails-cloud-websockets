@@ -16,3 +16,6 @@
 /config/master.key
 *.pem
 *.key
+/.bundle/
+/test-results/
+/playwright-report/
