@@ -20,9 +20,22 @@
         <a href="/?client=anycable" data-turbo="false" aria-current="<%= anycable && !extended ? "page" : "false" %>">AnyCable</a>
         <a href="/?client=anycable&amp;protocol=actioncable-v1-ext-json" data-turbo="false" aria-current="<%= extended ? "page" : "false" %>">AnyCable + presence &amp; replay</a>
       </div>
-      <p class="client-picker-note">Presence &amp; replay adds member tracking and catches up on missed messages when history is available.</p>
     </div>
   </nav>
+
+  <% if extended %>
+    <aside class="client-callout" aria-labelledby="client-callout-heading">
+      <span class="client-callout-icon" aria-hidden="true">i</span>
+      <div class="client-callout-content">
+        <div class="client-callout-header">
+          <h2 id="client-callout-heading">Presence &amp; replay</h2>
+          <span class="client-callout-tag">Valkey-backed replay</span>
+        </div>
+        <p class="client-callout-summary">Presence &amp; replay adds member tracking and catches up on missed messages when history is available.</p>
+        <p class="client-callout-detail">Presence runs through Reverb. Replay uses Valkey to retain message history.</p>
+      </div>
+    </aside>
+  <% end %>
 
   <section class="composer" aria-labelledby="message-label">
     <div>

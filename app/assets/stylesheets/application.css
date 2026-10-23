@@ -34,11 +34,18 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .client-picker { align-items: flex-start; margin-top: 28px; gap: 16px; padding-bottom: 26px; border-bottom: 1px solid var(--border); }
 .client-picker-label { padding-top: 12px; color: var(--muted); font-size: 12px; font-weight: 600; }
 .client-options { min-width: 0; }
-.client-picker-note { margin-top: 8px; color: var(--muted); font-size: 12px; }
 .segmented-control { width: fit-content; max-width: 100%; padding: 4px; border: 1px solid var(--border); border-radius: 9px; background: #eef1ee; gap: 3px; }
 .segmented-control a { padding: 7px 14px; border-radius: 6px; color: #5d6b63; text-decoration: none; font-size: 12px; font-weight: 550; }
 .segmented-control a:hover { color: var(--ink); }
 .segmented-control a[aria-current='page'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px #1b282314; }
+.client-callout { display: flex; align-items: flex-start; gap: 14px; margin-top: 24px; padding: 20px 22px; border: 1px solid #c9e3d4; border-radius: 12px; background: #edf7f1; }
+.client-callout-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #c4dfce; border-radius: 8px; background: #e0f0e6; color: #216b46; font: 600 16px Georgia, serif; }
+.client-callout-content { min-width: 0; flex: 1; }
+.client-callout-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.client-callout-header h2 { font-size: 14px; color: #225d3e; letter-spacing: 0; }
+.client-callout-tag { padding: 3px 8px; border: 1px solid #c8e1d2; border-radius: 5px; background: #f7fcf9; color: #35694c; font-size: 11px; font-weight: 600; }
+.client-callout-summary { margin-top: 8px; color: #375d48; font-size: 13px; }
+.client-callout-detail { margin-top: 5px; color: #5a7765; font-size: 12px; }
 .composer { display: grid; grid-template-columns: 1fr 2fr; align-items: center; gap: 24px; margin: 24px 0 32px; padding: 20px 22px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .composer label { font-weight: 650; }
 .composer p, .section-heading p, .messages-header p { margin-top: 3px; color: var(--muted); font-size: 12px; }
@@ -90,6 +97,6 @@ main > p { margin: 16px 0; color: var(--muted); }
   .action-grid, .reports-panel { grid-template-columns: 1fr; }
   .section-heading { gap: 2px; flex-direction: column; }
   .action-card { padding: 16px 18px; }
-  .messages-header, .composer { padding: 16px 18px; }
+  .messages-header, .composer, .client-callout { padding: 16px 18px; }
   #messages { padding: 6px 18px; }
 }
