@@ -13,6 +13,11 @@ export async function until(predicate, label, timeout = 15000) {
     throw new Error(`Timed out: ${label}`);
 }
 
+await until(async () => {
+    try { return (await fetch(`${base}/up`, { signal: AbortSignal.timeout(2000) })).ok; }
+    catch { return false; }
+}, 'proxy routing readiness', 30000);
+
 export async function client({ anonymous = false, protocol = "actioncable-v1-json", run } = {}) {
     const cookies = new Map();
     async function request(path, payload, headers = {}) {
