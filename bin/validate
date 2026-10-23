@@ -24,6 +24,7 @@ if mode in ["all", "browser", "readiness", "engines"]:
         args[args.index("rails-cloud-websockets-tests:local"):args.index("rails-cloud-websockets-tests:local")] = ["-v", f"{root}/{config}:/tests/{config}:ro"]
     run(args + [file])
 if mode == "all":
+    run([str(root / "bin/validate"), "engines"])
     run([str(root / "bin/validate-faults")])
     run([str(root / "bin/load")])
 if mode not in ["all", "protocol", "browser", "readiness", "engines"]:

@@ -8,7 +8,7 @@ test('release gate: the AnyCable extended protocol accepts connections', async (
 test('release gate: reconnect catches up broadcasts missed while the browser was offline', async ({ page, context, browser }) => {
     const sender = await browser.newContext({ ignoreHTTPSErrors: true });
     try {
-        await page.goto('/?client=anycable');
+        await page.goto('/?client=anycable&protocol=actioncable-v1-ext-json');
         await expect(page.locator('#status')).toHaveAttribute('data-connected', 'true');
         const senderPage = await sender.newPage();
         await senderPage.goto(`${process.env.DEMO_URL || 'https://cloud-ws.localhost:3443'}/`);
