@@ -6,6 +6,15 @@ require "laravel_cloud/websockets"
 require "minitest/autorun"
 
 class ClientCompatibilityTest < Minitest::Test
+  def test_cloud_url_enables_history_without_the_anycable_ruby_extension
+    refute defined?(AnyCable)
+    broker = LaravelCloud::Websockets::Broker.resolve
+    refute_nil broker
+    stream = "plain-rails:#{SecureRandom.hex(16)}"
+    entry = broker.append(stream, JSON.generate(text: "Cloud URL"))
+    assert_equal [entry], broker.read(stream)
+  end
+
   def test_the_selected_client_replays_history_over_authenticated_valkey_tls
     client = Redis.new(url: ENV.fetch("REDIS_URL"), ssl_params: { verify_mode: OpenSSL::SSL::VERIFY_PEER })
     broker = LaravelCloud::Websockets::Broker.new(client)
