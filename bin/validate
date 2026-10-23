@@ -12,8 +12,11 @@ def run(args):
 
 mode = sys.argv[1] if len(sys.argv) > 1 else "all"
 url = os.environ.get("DEMO_URL", "https://cloud-ws.localhost:3443")
-if mode in ["all", "protocol"]:
-    run(["docker", "run", "--rm", "--network", "host", "-e", f"DEMO_URL={url}", "-e", "NODE_EXTRA_CA_CERTS=/certs/ca.pem", "-v", "rails-cloud-websockets_certs:/certs:ro", "-v", f"{root}/test:/test:ro", "node:24-bookworm-slim", "node", "--test", "--test-force-exit", "/test/protocol/contracts.test.mjs"])
+if mode in ["all", "protocol", "backend"]:
+    files = ["/test/protocol/backend.test.mjs"] if mode == "backend" else ["/test/protocol/contracts.test.mjs"]
+    if mode == "all":
+        files.append("/test/protocol/backend.test.mjs")
+    run(["docker", "run", "--rm", "--network", "host", "-e", f"DEMO_URL={url}", "-e", "NODE_EXTRA_CA_CERTS=/certs/ca.pem", "-v", "rails-cloud-websockets_certs:/certs:ro", "-v", f"{root}/test:/test:ro", "node:24-bookworm-slim", "node", "--test", "--test-concurrency=1", "--test-force-exit", *files])
 if mode in ["all", "browser", "readiness", "engines"]:
     run(["docker", "build", "-f", "docker/tests/Dockerfile", "-t", "rails-cloud-websockets-tests:local", "."])
     file = "test/browser/clients.spec.mjs" if mode != "readiness" else "test/readiness/anycable.spec.mjs"
@@ -27,5 +30,5 @@ if mode == "all":
     run([str(root / "bin/validate"), "engines"])
     run([str(root / "bin/validate-faults")])
     run([str(root / "bin/load")])
-if mode not in ["all", "protocol", "browser", "readiness", "engines"]:
-    raise SystemExit("Use all, protocol, browser, engines, or readiness")
+if mode not in ["all", "protocol", "browser", "readiness", "engines", "backend"]:
+    raise SystemExit("Use all, protocol, browser, engines, backend, or readiness")
