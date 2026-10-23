@@ -14,10 +14,13 @@
 
   <nav class="client-picker" aria-label="WebSocket client">
     <span class="client-picker-label">Client</span>
-    <div class="segmented-control">
-      <a href="/?client=actioncable" data-turbo="false" aria-current="<%= anycable ? "false" : "page" %>">Action Cable</a>
-      <a href="/?client=anycable" data-turbo="false" aria-current="<%= anycable && !extended ? "page" : "false" %>">AnyCable</a>
-      <a href="/?client=anycable&amp;protocol=actioncable-v1-ext-json" data-turbo="false" aria-current="<%= extended ? "page" : "false" %>">AnyCable extended</a>
+    <div class="client-options">
+      <div class="segmented-control">
+        <a href="/?client=actioncable" data-turbo="false" aria-current="<%= anycable ? "false" : "page" %>">Action Cable</a>
+        <a href="/?client=anycable" data-turbo="false" aria-current="<%= anycable && !extended ? "page" : "false" %>">AnyCable</a>
+        <a href="/?client=anycable&amp;protocol=actioncable-v1-ext-json" data-turbo="false" aria-current="<%= extended ? "page" : "false" %>">AnyCable + presence &amp; replay</a>
+      </div>
+      <p class="client-picker-note">Presence &amp; replay adds member tracking and catches up on missed messages when history is available.</p>
     </div>
   </nav>
 
@@ -62,7 +65,7 @@
         ["broker-leave", "Leave presence", "Remove your membership from the room without disconnecting.", "Leave presence"],
         ["server-presence", "Server presence", "Let a Rails channel join your guest account using Ruby's presence helpers.", "Join from the server"]
       ].each do |id, title, description, label| %>
-        <%= render "action_card", id: id, title: title, description: "#{description} Requires AnyCable extended.", label: label %>
+        <%= render "action_card", id: id, title: title, description: "#{description} Select the presence & replay client above.", label: label %>
       <% end %>
     </div>
   </section>

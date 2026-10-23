@@ -55,11 +55,11 @@ An additional `compose.anycable.yaml` fixture starts the app with an existing `a
 
 ## Try the demo
 
-Switch between Action Cable, AnyCable, and AnyCable extended using the page links. Each tab has a Rails session. A new browser context creates an independent guest account.
+Switch between Action Cable, AnyCable, and AnyCable + presence & replay using the page links. Each tab has a Rails session. A new browser context creates an independent guest account.
 
 The controls exercise channel actions, controller broadcasts, direct replies, custom JSON coders, `stream_for`, actual AnyCable whisper commands, periodic transmissions, Rails application presence, unsubscribe, reconnect, logout, and remote access revocation. Creating a report exercises a model callback and a Turbo Stream. Turbo navigation checks that the transport is not installed twice.
 
-In AnyCable extended mode, use AnyCable presence to join through the SDK, Leave presence to leave, and Server presence to exercise Ruby `join_presence`. A history entry reports when the cache cannot replay missed messages.
+With AnyCable + presence & replay selected, use Join and list members to join through the SDK, Leave presence to leave, and Join from the server to exercise Ruby `join_presence`. A history entry reports when the cache cannot replay missed messages.
 
 After revoking access, click Log out and follow a client link to create a fresh guest session. After logging out, following a client link is enough.
 
@@ -134,7 +134,7 @@ its Rails and Redis client matrices were rerun. The running demo pins that commi
 | Valkey load | Six waves of 200 clients deliver 12,000 messages with zero duplicates and no remaining test connections. Local p95 is 218-237 ms; the largest delivery is 309 ms. |
 | Existing AnyCable configuration | HTTP profile passes 19 protocol and 3 replay checks with the existing adapter and channel prefix. |
 | Pusher backend capabilities | 4 checks pass over HTTP and HTTPS, covering live delivery, cache retention, and presence membership. |
-| AnyCable extended clients | 12 checks pass across Chromium, Firefox, and WebKit for negotiation, offline catch-up, presence, and protocol pong request volume. |
+| AnyCable presence and replay clients | 12 checks pass across Chromium, Firefox, and WebKit for negotiation, offline catch-up, presence, and protocol pong request volume. |
 | Valkey fault injection | 4 pass for complete worker loss, Reverb restart, lost cache history, and presence rejoining. |
 | Stream replay | 3 checks pass for authorized streams, custom callbacks and coders, multiple outputs per callback, overlapping replay, and invalid offsets. |
 | Valkey contract | 8 checks and 16 assertions pass for shared history, concurrent offsets, bounded retention, cache loss, existing connection reuse, and TLS hostname validation. |

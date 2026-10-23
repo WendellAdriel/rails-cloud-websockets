@@ -106,7 +106,7 @@ function setup() {
     bind('timer', () => state.extra('TimerChannel'));
     bind('presence', () => state.extra('PresenceChannel'));
     async function brokerPresence() {
-        if (!anycable || protocol !== 'actioncable-v1-ext-json') throw new Error('Choose AnyCable extended to use its presence API.');
+        if (!anycable || protocol !== 'actioncable-v1-ext-json') throw new Error('Select AnyCable + presence & replay to use presence.');
         return state.room.presence;
     }
     bind('broker-presence', async () => {

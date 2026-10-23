@@ -31,9 +31,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .badge[data-connected='true'] { background: var(--accent-soft); border-color: #d6eadd; color: #19683f; }
 .badge[data-connected='true']::before { background: #28885b; }
 .badge[data-connected='false']::before { background: #bc7347; }
-.client-picker { margin-top: 28px; gap: 16px; padding-bottom: 26px; border-bottom: 1px solid var(--border); }
-.client-picker-label { color: var(--muted); font-size: 12px; font-weight: 600; }
-.segmented-control { padding: 4px; border: 1px solid var(--border); border-radius: 9px; background: #eef1ee; gap: 3px; }
+.client-picker { align-items: flex-start; margin-top: 28px; gap: 16px; padding-bottom: 26px; border-bottom: 1px solid var(--border); }
+.client-picker-label { padding-top: 12px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.client-options { min-width: 0; }
+.client-picker-note { margin-top: 8px; color: var(--muted); font-size: 12px; }
+.segmented-control { width: fit-content; max-width: 100%; padding: 4px; border: 1px solid var(--border); border-radius: 9px; background: #eef1ee; gap: 3px; }
 .segmented-control a { padding: 7px 14px; border-radius: 6px; color: #5d6b63; text-decoration: none; font-size: 12px; font-weight: 550; }
 .segmented-control a:hover { color: var(--ink); }
 .segmented-control a[aria-current='page'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px #1b282314; }
@@ -81,7 +83,9 @@ main > p { margin: 16px 0; color: var(--muted); }
   .page-header { align-items: flex-start; flex-direction: column; gap: 16px; }
   .session { align-items: center; flex-direction: row; flex-wrap: wrap; gap: 10px; }
   .client-picker { align-items: flex-start; flex-direction: column; gap: 10px; margin-top: 22px; }
-  .segmented-control { width: 100%; }
+  .client-picker-label { padding-top: 0; }
+  .client-options, .segmented-control { width: 100%; }
+  .segmented-control { flex-direction: column; align-items: stretch; }
   .segmented-control a { padding: 8px; flex: 1; text-align: center; }
   .action-grid, .reports-panel { grid-template-columns: 1fr; }
   .section-heading { gap: 2px; flex-direction: column; }
