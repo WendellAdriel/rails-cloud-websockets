@@ -45,7 +45,7 @@ Stop containers with `docker compose down`. Volumes retain the database and loca
 docker compose exec rails1 bundle show rails-on-cloud
 ```
 
-For gem development only, an optional overlay mounts the adjacent `../laravel-cloud-rails` checkout:
+For gem development only, an optional overlay mounts the original `../../Laravel/laravel-cloud-rails` checkout:
 
 ```bash
 docker compose -f compose.yaml -f compose.dev.yaml up -d --wait
