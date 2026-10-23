@@ -1,11 +1,12 @@
 GIT
   remote: https://github.com/WendellAdriel/laravel-cloud-rails.git
-  revision: bd17ca6b3df9f620a70a3b01a5dd41cf04e8c5f3
+  revision: aaf673db7d2bad894d8247d737ed093125f62625
   branch: feat/cloud-websockets
   specs:
     rails-on-cloud (0.0.0)
       activejob (>= 7.1)
       aws-sdk-sqs (~> 1.80)
+      redis (>= 4.8, < 6)
 
 GEM
   remote: https://rubygems.org/
@@ -264,6 +265,10 @@ GEM
       prism (>= 1.6.0)
       rbs (>= 4.0.0)
       tsort
+    redis (5.4.1)
+      redis-client (>= 0.22.0)
+    redis-client (0.31.0)
+      connection_pool
     reline (0.7.0)
       io-console (~> 0.5)
     rexml (3.4.4)

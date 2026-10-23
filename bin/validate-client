@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+revision=$(awk '/revision:/ { print $2; exit }' Gemfile.lock)
+version=${REDIS_VERSION:-5.4.1}
+image=rails-cloud-websockets-client:$version
+docker build -f docker/gem-tests/Dockerfile --build-arg "GEM_REVISION=$revision" --build-arg "REDIS_VERSION=$version" -t "$image" .
+docker run --rm --network rails-cloud-websockets_default -e "REDIS_VERSION=$version" -e REDIS_URL=rediss://demo:cloud-demo-valkey@valkey:6379/0 -e PUSHER_APP_ID=cloud-demo -e SSL_CERT_FILE=/certs/ca.pem -v rails-cloud-websockets_certs:/certs:ro "$image" ruby -I/gem/lib /compatibility.rb

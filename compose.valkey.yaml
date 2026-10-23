@@ -1,0 +1,32 @@
+services:
+  valkey-certificates:
+    image: ruby:3.4.10
+    entrypoint: sh
+    command: ["-c", "test -f /certs/valkey.pem || (openssl req -newkey rsa:2048 -nodes -keyout /certs/valkey.key -out /certs/valkey.csr -subj '/CN=valkey' && printf 'subjectAltName=DNS:valkey\nextendedKeyUsage=serverAuth\n' > /certs/valkey.ext && openssl x509 -req -in /certs/valkey.csr -CA /certs/ca.pem -CAkey /certs/ca.key -CAcreateserial -out /certs/valkey.pem -days 30 -extfile /certs/valkey.ext && chmod 644 /certs/valkey.key)"]
+    volumes: ["certs:/certs"]
+    depends_on:
+      certificates: {condition: service_completed_successfully}
+  valkey:
+    image: valkey/valkey:9.1.2
+    command: ["valkey-server", "/etc/valkey/lab.conf"]
+    volumes: ["./docker/valkey.conf:/etc/valkey/lab.conf:ro", "certs:/certs:ro"]
+    depends_on:
+      valkey-certificates: {condition: service_completed_successfully}
+    networks:
+      default:
+        aliases: [valkey-wrong-host]
+    healthcheck:
+      test: ["CMD-SHELL", "VALKEYCLI_AUTH=cloud-demo-valkey valkey-cli --tls --cacert /certs/ca.pem --user demo -h valkey ping | grep PONG"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  rails1:
+    environment:
+      REDIS_URL: rediss://demo:cloud-demo-valkey@valkey:6379/0
+    depends_on:
+      valkey: {condition: service_healthy}
+  rails2:
+    environment:
+      REDIS_URL: rediss://demo:cloud-demo-valkey@valkey:6379/0
+    depends_on:
+      valkey: {condition: service_healthy}
