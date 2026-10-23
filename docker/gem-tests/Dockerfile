@@ -1,6 +1,6 @@
 ARG RUBY_VERSION=3.4.10
 FROM ruby:${RUBY_VERSION}
-ARG GEM_REVISION=1e3d8b5d20f80feb74345a850e010c50b8eff303
+ARG GEM_REVISION=0c198aba9db167e29454fb82e91b01347f6700f6
 ARG RAILS_VERSION=8.1.3.1
 ARG REDIS_VERSION=5.4.1
 RUN git clone --branch feat/cloud-websockets https://github.com/WendellAdriel/laravel-cloud-rails.git /gem && git -C /gem checkout "$GEM_REVISION"
