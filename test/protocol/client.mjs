@@ -41,7 +41,14 @@ export async function client({ anonymous = false, protocol = "actioncable-v1-jso
         const html = await response.text();
         csrf = html.match(/name="csrf-token" content="([^"]+)"/)?.[1];
     }
-    const socket = new WebSocket(`${base.replace(/^http/, 'ws')}/app/cloud-demo-key?protocol=7&client=validation&version=1`);
+    const bridge = await request('/__laravel_cloud/cable.js', undefined, {
+        Referer: `${base}/`, 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'no-cors', 'Sec-Fetch-Dest': 'script',
+    });
+    assert.equal(bridge.status, 200, 'public bridge settings');
+    const settings = (await bridge.text()).match(/^globalThis\.__laravelCloudWebsockets = (\{[^\n]+\});/);
+    assert.ok(settings, 'bridge configuration is available');
+    const config = JSON.parse(settings[1]);
+    const socket = new WebSocket(`${config.scheme === 'https' ? 'wss' : 'ws'}://${config.host}:${config.port}/app/${encodeURIComponent(config.key)}?protocol=7&client=validation&version=1`, { headers: { Origin: base } });
     const events = [];
     const frames = [];
     socket.addEventListener('message', event => {
