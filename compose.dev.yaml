@@ -1,0 +1,7 @@
+services:
+  rails1:
+    volumes: [".:/app", "../laravel-cloud-rails:/gem"]
+    command: ["sh", "-c", "git config --global --add safe.directory /gem && bundle config set local.rails-on-cloud /gem && bundle exec puma -C config/puma.rb"]
+  rails2:
+    volumes: [".:/app", "../laravel-cloud-rails:/gem"]
+    command: ["sh", "-c", "git config --global --add safe.directory /gem && bundle config set local.rails-on-cloud /gem && bundle exec puma -C config/puma.rb"]

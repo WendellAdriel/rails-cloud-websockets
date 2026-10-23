@@ -1,0 +1,5 @@
+services:
+  rails1:
+    volumes: ["./test/fixtures/anycable.yml:/app/config/cable.yml:ro"]
+  rails2:
+    volumes: ["./test/fixtures/anycable.yml:/app/config/cable.yml:ro"]

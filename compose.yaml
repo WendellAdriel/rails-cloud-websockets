@@ -1,0 +1,59 @@
+name: rails-cloud-websockets
+x-rails: &rails
+  build: .
+  image: rails-cloud-websockets:local
+  environment: &rails-env
+    DATABASE_URL: postgres://cloud:cloud@postgres:5432/cloud_demo
+    SECRET_KEY_BASE: local-demo-secret-key-base-0123456789abcdef0123456789abcdef0123456789abcdef
+    PUSHER_APP_ID: cloud-demo
+    PUSHER_APP_KEY: cloud-demo-key
+    PUSHER_APP_SECRET: cloud-demo-secret
+    PUSHER_HOST: cloud-ws.localhost
+    PUSHER_PORT: 3443
+    PUSHER_SCHEME: https
+    SSL_CERT_FILE: /certs/ca.pem
+    WEB_CONCURRENCY: 2
+    RAILS_MAX_THREADS: 8
+    RAILS_LOG_LEVEL: warn
+  volumes: ["certs:/certs:ro"]
+  depends_on:
+    postgres: {condition: service_healthy}
+    reverb: {condition: service_healthy}
+  healthcheck:
+    test: [CMD, ruby, -rnet/http, -e, "exit(Net::HTTP.get_response(URI('http://127.0.0.1:3000/up')).code == '200' ? 0 : 1)"]
+    interval: 2s
+    timeout: 3s
+    retries: 60
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment: {POSTGRES_USER: cloud, POSTGRES_PASSWORD: cloud, POSTGRES_DB: cloud_demo}
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck: {test: [CMD-SHELL, "pg_isready -U cloud -d cloud_demo"], interval: 2s, timeout: 2s, retries: 30}
+  reverb:
+    build: docker/reverb
+    image: rails-cloud-reverb:local
+    healthcheck:
+      test: [CMD, php, -r, "exit(@fsockopen('127.0.0.1', 8080) ? 0 : 1);"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  certificates:
+    image: ruby:3.4.10
+    entrypoint: sh
+    command: ["-c", "test -f /certs/server.pem || (openssl req -x509 -newkey rsa:2048 -nodes -keyout /certs/ca.key -out /certs/ca.pem -days 30 -subj '/CN=Cloud WebSockets Demo CA' && openssl req -newkey rsa:2048 -nodes -keyout /certs/server.key -out /certs/server.csr -subj '/CN=cloud-ws.localhost' && printf 'subjectAltName=DNS:cloud-ws.localhost,DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=serverAuth\n' > /certs/ext && openssl x509 -req -in /certs/server.csr -CA /certs/ca.pem -CAkey /certs/ca.key -CAcreateserial -out /certs/server.pem -days 30 -extfile /certs/ext)"]
+    volumes: ["certs:/certs"]
+  rails1: {<<: *rails}
+  rails2: {<<: *rails}
+  proxy:
+    image: nginx:1.28-alpine
+    volumes: ["./docker/nginx.conf:/etc/nginx/nginx.conf:ro", "certs:/certs:ro"]
+    ports: ["127.0.0.1:3108:80", "127.0.0.1:3443:3443"]
+    depends_on:
+      rails1: {condition: service_healthy}
+      rails2: {condition: service_healthy}
+      certificates: {condition: service_completed_successfully}
+    networks:
+      default:
+        aliases: [cloud-ws.localhost]
+volumes: {postgres: {}, certs: {}}

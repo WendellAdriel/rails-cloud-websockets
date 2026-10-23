@@ -1,0 +1,5 @@
+services:
+  rails1:
+    environment: {PUSHER_PORT: 3108, PUSHER_SCHEME: http}
+  rails2:
+    environment: {PUSHER_PORT: 3108, PUSHER_SCHEME: http}

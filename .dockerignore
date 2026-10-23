@@ -1,0 +1,11 @@
+.git
+.memory
+.localfiles
+node_modules
+log
+tmp
+storage
+public/assets
+config/master.key
+.env
+.bundle
