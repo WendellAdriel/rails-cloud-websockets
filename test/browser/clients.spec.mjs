@@ -166,11 +166,16 @@ for (const client of ['actioncable', 'anycable']) {
     });
 }
 
-test('full page navigation promptly releases all Rails connections', async ({ page }) => {
+test('full page navigation releases connections and back navigation reconnects', async ({ page }) => {
     await page.goto('/?client=anycable');
     await expect(page.locator('#status')).toHaveAttribute('data-connected', 'true');
     await expect(page.locator('turbo-cable-stream-source')).toHaveAttribute('connected', '');
     const before = (await (await page.request.get('/audit')).json()).events.connect;
     await page.goto('/about');
     await expect.poll(async () => (await (await page.request.get('/audit')).json()).events.disconnect || 0, { timeout: 5000 }).toBeGreaterThanOrEqual(before);
+    await page.goBack();
+    await expect(page.locator('#status')).toHaveAttribute('data-connected', 'true');
+    await page.locator('#message').fill('after back navigation');
+    await page.locator('#send').click();
+    await expect(page.locator('#messages')).toContainText('after back navigation');
 });
