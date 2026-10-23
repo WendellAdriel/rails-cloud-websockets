@@ -14,7 +14,10 @@ class DemoController < ApplicationController
   end
 
   def health
-    render json: { status: "ok", replica: ENV.fetch("HOSTNAME", "local"), worker: Process.pid, connections: ActionCable.server.connections.length }
+    connections = ActionCable.server.connections
+    result = { status: "ok", replica: ENV.fetch("HOSTNAME", "local"), worker: Process.pid, connections: connections.length }
+    result[:run_connections] = connections.count { |connection| connection.lab_run == params[:run] } if params[:run].present?
+    render json: result
   end
 
   def broadcast

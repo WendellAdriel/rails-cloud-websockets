@@ -23,7 +23,7 @@ async function pool(items, operation, concurrency = 8) {
 async function workers() {
     const records = new Map();
     for (let index = 0; index < 32; index++) {
-        const record = await (await fetch(`${base}/up`, { headers: { Connection: 'close' } })).json();
+        const record = await (await fetch(`${base}/up?run=${encodeURIComponent(prefix)}`, { headers: { Connection: 'close' } })).json();
         records.set(`${record.replica}:${record.worker}`, record);
     }
     return [...records.values()];
@@ -33,7 +33,7 @@ const start = performance.now();
 const before = await workers();
 try {
     await pool(Array.from({ length: count }), async (_, index) => {
-        const cable = await client();
+        const cable = await client({ run: prefix });
         cables.push(cable);
         await cable.subscribe();
         cable.socket.addEventListener('message', event => {
@@ -57,12 +57,12 @@ try {
     assert.ok([...seen.values()].every(value => value === 1), 'duplicate deliveries');
     latencies.sort((left, right) => left - right);
     const connectedWorkers = await workers();
-    await pool(cables, cable => cable.close());
+    await pool(cables, async cable => { assert.equal((await cable.close())?.status, 200, "disconnect acknowledgement"); });
     cables.length = 0;
     let after;
     await until(async () => {
         after = await workers();
-        return after.length >= before.length && after.reduce((sum, record) => sum + record.connections, 0) <= before.reduce((sum, record) => sum + record.connections, 0);
+        return after.length >= before.length && after.every(record => record.run_connections === 0);
     }, 'connection cleanup', 15000);
     console.log(JSON.stringify({ clients: count, rounds, deliveries: seen.size, duplicates: 0, connectSeconds: Number(((connectedAt - start) / 1000).toFixed(2)), totalSeconds: Number(((performance.now() - start) / 1000).toFixed(2)), latencyMs: { p50: latencies[Math.floor(latencies.length * .50)], p95: latencies[Math.floor(latencies.length * .95)], max: latencies.at(-1) }, workersBefore: before, workersConnected: connectedWorkers, workersAfter: after }, null, 2));
 } finally {

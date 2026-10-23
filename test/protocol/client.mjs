@@ -13,12 +13,12 @@ export async function until(predicate, label, timeout = 15000) {
     throw new Error(`Timed out: ${label}`);
 }
 
-export async function client({ anonymous = false } = {}) {
+export async function client({ anonymous = false, protocol = "actioncable-v1-json", run } = {}) {
     const cookies = new Map();
     async function request(path, payload, headers = {}) {
         const response = await fetch(`${base}${path}`, {
             method: payload === undefined ? 'GET' : 'POST',
-            headers: { Origin: base, Cookie: [...cookies].map(([key, value]) => `${key}=${value}`).join('; '), 'Content-Type': 'application/json', ...headers },
+            headers: { Origin: base, Cookie: [...cookies].map(([key, value]) => `${key}=${value}`).join('; '), 'Content-Type': 'application/json', ...(run ? { 'X-Lab-Run': run } : {}), ...headers },
             body: payload === undefined ? undefined : typeof payload === 'string' ? payload : JSON.stringify(payload),
         });
         for (const cookie of response.headers.getSetCookie()) {
@@ -54,7 +54,7 @@ export async function client({ anonymous = false } = {}) {
         if (body.token) token = body.token;
         return { status: response.status, ...body };
     }
-    const connection = await command({ command: 'connect', socket_id: handshake.data.socket_id });
+    const connection = await command({ command: 'connect', socket_id: handshake.data.socket_id, protocol });
     if (connection.status === 200) {
         for (const channel of connection.channels) {
             socket.send(JSON.stringify({ event: 'pusher:subscribe', data: { channel: channel.name, auth: channel.auth } }));
@@ -81,8 +81,13 @@ export async function client({ anonymous = false } = {}) {
         async post(path, data = {}) { return request(path, data, { 'X-CSRF-Token': csrf }); },
         async close() {
             clearInterval(lease);
-            if (token) await command({ command: 'disconnect' }).catch(() => {});
-            socket.close();
+            const result = token ? await command({ command: 'disconnect' }).catch(() => undefined) : undefined;
+            if (socket.readyState !== WebSocket.CLOSED) {
+                const closed = new Promise(resolve => socket.addEventListener('close', resolve, { once: true }));
+                socket.close();
+                await closed;
+            }
+            return result;
         },
     };
 }
