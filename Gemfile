@@ -5,6 +5,6 @@ gem "propshaft", "1.3.2"
 gem "pg", "~> 1.6"
 gem "turbo-rails", "~> 2.0"
 gem "bootsnap", "1.26.0", require: false
-gem "rails-on-cloud", git: "https://github.com/WendellAdriel/laravel-cloud-rails.git", branch: "feat/cloud-websockets"
+gem "rails-on-cloud", git: "https://github.com/laravel/laravel-cloud-rails.git", branch: "feat/cloud-websockets"
 gem "anycable-rails-core", "~> 1.6"
 gem "json", "~> 2.0"

@@ -1,5 +1,5 @@
 GIT
-  remote: https://github.com/WendellAdriel/laravel-cloud-rails.git
+  remote: https://github.com/laravel/laravel-cloud-rails.git
   revision: 8cee99aee103560b803b96de4df8dd496ffadbf4
   branch: feat/cloud-websockets
   specs:

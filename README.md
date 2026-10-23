@@ -1,6 +1,6 @@
 # Rails Cloud WebSockets lab
 
-Exercise ordinary Rails channels with the official Action Cable and AnyCable clients against Laravel Reverb. The demo installs `rails-on-cloud` from [your fork](https://github.com/WendellAdriel/laravel-cloud-rails/tree/feat/cloud-websockets). It contains no copy of the bridge gem.
+Exercise ordinary Rails channels with the official Action Cable and AnyCable clients against Laravel Reverb. The demo installs `rails-on-cloud` from [the original gem's feature branch](https://github.com/laravel/laravel-cloud-rails/tree/feat/cloud-websockets). It contains no copy of the bridge gem.
 
 - [Run locally](#run-locally)
 - [Try the demo](#try-the-demo)
@@ -39,7 +39,7 @@ Stop containers with `docker compose down`. Volumes retain the database and loca
 
 ### Gem installation
 
-`Gemfile.lock` pins the fork commit used by the image. The default stack has no source mounts or Bundler local override. Verify it with:
+`Gemfile.lock` pins the gem commit used by the image. The default stack has no source mounts or Bundler local override. Verify it with:
 
 ```bash
 docker compose exec rails1 bundle show rails-on-cloud
@@ -180,7 +180,7 @@ REDIS_VERSION=4.8.1 bin/validate-client
 REDIS_VERSION=5.4.1 bin/validate-client
 ```
 
-These checks build the fork revision pinned in `Gemfile.lock` and use its packaged Redis dependency.
+These checks build the gem revision pinned in `Gemfile.lock` and use its packaged Redis dependency.
 
 ### Reverb and optional Valkey
 
@@ -198,7 +198,7 @@ See [AnyCable reliability](https://docs.anycable.io/js/reliability), [presence](
 
 No Cloud resources have been created and nothing has been deployed. Run the local validation commands before a Cloud trial.
 
-Push this demo to a Git repository, connect that repository to Cloud, select its Rails stack, and attach PostgreSQL and managed WebSockets. Keep the locked fork dependency; do not copy the local gem or use a Bundler path override. Cloud's Rails integration supplies `DATABASE_URL`, `SECRET_KEY_BASE`, and the six `PUSHER_*` variables. Attach Valkey to exercise retained history using the injected `REDIS_URL`.
+Push this demo to a Git repository, connect that repository to Cloud, select its Rails stack, and attach PostgreSQL and managed WebSockets. Keep the locked Git dependency; do not copy the local gem or use a Bundler path override. Cloud's Rails integration supplies `DATABASE_URL`, `SECRET_KEY_BASE`, and the six `PUSHER_*` variables. Attach Valkey to exercise retained history using the injected `REDIS_URL`.
 
 Use these application commands:
 
