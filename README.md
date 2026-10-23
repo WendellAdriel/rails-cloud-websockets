@@ -55,9 +55,11 @@ An additional `compose.anycable.yaml` fixture starts the app with an existing `a
 
 ## Try the demo
 
-Switch between Action Cable and AnyCable using the page links. Each tab has a Rails session. A new browser context creates an independent guest account.
+Switch between Action Cable, AnyCable, and AnyCable extended using the page links. Each tab has a Rails session. A new browser context creates an independent guest account.
 
 The controls exercise channel actions, controller broadcasts, direct replies, custom JSON coders, `stream_for`, actual AnyCable whisper commands, periodic transmissions, Rails application presence, unsubscribe, reconnect, logout, and remote access revocation. Creating a report exercises a model callback and a Turbo Stream. Turbo navigation checks that the transport is not installed twice.
+
+In AnyCable extended mode, use AnyCable presence to join through the SDK, Leave presence to leave, and Server presence to exercise Ruby `join_presence`. A history entry reports when the cache cannot replay missed messages.
 
 After revoking access, click Log out and follow a client link to create a fresh guest session. After logging out, following a client link is enough.
 
@@ -73,6 +75,8 @@ Run these sequentially. Fault tests restart this demo's Reverb container and kil
 bin/validate-gem
 bin/validate all
 ```
+
+Protocol checks wait for the proxy to route requests after container replacement.
 
 Individual suites:
 
@@ -97,7 +101,7 @@ Reports and failed-browser traces are saved privately in `.localfiles/results/`.
 
 ## Validation coverage
 
-The seven original validation areas are tracked separately from the AnyCable broker release gates below.
+The seven original validation areas cover live transport, Rails behavior, security, and production execution. The AnyCable checks also cover presence and retained stream recovery.
 
 | Area | Local coverage |
 | --- | --- |
@@ -115,21 +119,37 @@ Callbacks, coders, timers, direct transmit, remote disconnect, Turbo, HTML/CSP, 
 
 ### Local results
 
-The 2026-10-23 run used fork commit `bd17ca6` and the Git-installed production image:
+The 2026-10-23 checks used Git-installed production images at `aaf673d` and
+`1e3d8b5`. The final commit adds cache discovery without AnyCable's Ruby extension;
+its Rails and Redis client matrices were rerun. The running demo pins that commit.
 
 | Check | Result |
 | --- | --- |
-| Gem suite | 86 tests and 277 assertions pass; Rails 7.1.6 / Ruby 3.2.11 and Rails 8.1.3.1 / Ruby 3.4.10 were checked. |
-| Protocol contracts | 16 pass. |
+| Gem suite | 87 tests and 282 assertions pass on Rails 7.1.6 / Ruby 3.2 and Rails 8.1.3.1 / Ruby 3.4.10. |
+| Packaged gem | Built and installed locally; the installed package loads its WebSockets components. |
+| Protocol contracts | 19 pass, including Ruby presence helpers and isolated rejection of oversized subscriber frames. |
 | Browser clients | 15 Chromium checks and 10 Firefox/WebKit checks pass. |
-| Fault injection | 5 pass. |
-| Repeated load | Six waves of 200 clients deliver 12,000 messages with zero duplicates; connections return to their starting level or below. |
-| Delivery latency | Local p95 is 369-477 ms across the six waves; the largest observed delivery is 570 ms. |
-| Memory | After the sixth wave, Rails container RSS is approximately 394 and 400 MiB; Reverb uses 40 MiB. RSS remains allocated after connection cleanup. |
+| Reverb-only fault injection | 5 pass, including worker and Reverb restarts, delayed acknowledgements, lease expiry, and native Web Worker recovery. |
+| Reverb-only load | 200 clients receive 2,000 messages with zero duplicates; all four workers participate and every test connection is released. Local p95 is 241 ms and the largest observed delivery is 313 ms. |
+| Valkey load | Six waves of 200 clients deliver 12,000 messages with zero duplicates and no remaining test connections. Local p95 is 218-237 ms; the largest delivery is 309 ms. |
+| Existing AnyCable configuration | HTTP profile passes 19 protocol and 3 replay checks with the existing adapter and channel prefix. |
 | Pusher backend capabilities | 4 checks pass over HTTP and HTTPS, covering live delivery, cache retention, and presence membership. |
-| AnyCable broker gates | 3 fail at extended-protocol negotiation. |
+| AnyCable extended clients | 12 checks pass across Chromium, Firefox, and WebKit for negotiation, offline catch-up, presence, and protocol pong request volume. |
+| Valkey fault injection | 4 pass for complete worker loss, Reverb restart, lost cache history, and presence rejoining. |
+| Stream replay | 3 checks pass for authorized streams, custom callbacks and coders, multiple outputs per callback, overlapping replay, and invalid offsets. |
+| Valkey contract | 8 checks and 16 assertions pass for shared history, concurrent offsets, bounded retention, cache loss, existing connection reuse, and TLS hostname validation. |
+| Redis client compatibility | Redis 4.8.1 and 5.4.1 each pass 2 tests and 5 assertions against authenticated Valkey TLS, including discovery without the AnyCable Ruby extension. |
 
-These short runs measure this lab. They do not establish a production capacity limit or a long-term memory plateau. Raw per-wave Docker samples and worker counts are retained in `.localfiles/results/load-wave-*.json`.
+The cross-browser offline test closes the established connection after disabling
+networking. Playwright's offline setting alone leaves existing WebSockets open in
+Firefox and WebKit. Separate fault tests drop the backend connections directly.
+
+These short runs measure this lab. They do not establish a production capacity
+limit or a long-term memory plateau. Docker-reported memory after the Reverb-only
+run is about 341 and 347 MiB for Rails and 38 MiB for Reverb. Raw Docker samples and
+worker counts are retained in `.localfiles/results/load-git-reverb.json` and
+`load-git-valkey-wave-*.json`. After the sixth Valkey wave, Docker reports about
+347 and 354 MiB for Rails and 39 MiB for Reverb.
 
 To repeat the churn check and preserve each report:
 
@@ -142,31 +162,43 @@ done
 
 ## AnyCable release gates
 
-Run the outstanding acceptance checks separately:
+The extended protocol, offline replay, and presence checks use the official SDK. Run them with the optional Valkey fixture:
 
 ```bash
-bin/validate readiness
+docker compose -f compose.yaml -f compose.valkey.yaml up -d --wait
+bin/validate-broker
 ```
 
-These checks must pass before claiming full AnyCable feature parity. The bridge currently handles the default `actioncable-v1-json` protocol. It does not implement AnyCable's extended protocol, missed-message replay, session recovery across worker loss, or broker presence API. Ordinary Rails presence and reconnect/resubscribe coverage do not prove those features.
+Add `-f compose.http.yaml` to the Compose command and set `DEMO_URL=http://127.0.0.1:3108` for manual HTTP testing. The Valkey fixture adds only `REDIS_URL` to the application, matching Cloud's attached-cache variable. It runs Valkey 9.1.2 with TLS and a dedicated demo user restricted to the replay commands and keys. No cache port is published on the host.
 
-The release gates require extended-protocol connections, offline catch-up, and the presence SDK API. All three currently stop at extended-protocol negotiation; recovery and presence assertions must then pass once that handshake is implemented. The gates are not skipped or counted as passing tests.
+`bin/validate-broker` checks shared history and concurrent offsets against Valkey, runs the SDK acceptance checks in Chromium, Firefox, and WebKit, and injects worker, Reverb, and cache failures. The fault suite runs in Chromium. The tests distinguish reconnecting, replaying retained messages, restoring presence membership, and reporting unavailable history. Cache loss produces the SDK's channel `info` event with `type: 'history_not_found'` and permits fresh live delivery.
 
-### Pusher-only integration
+Check both supported Redis client versions against the same TLS fixture:
 
-The integration must use only the six injected `PUSHER_*` variables. It must not add database tables or require Redis, NATS, or another storage service. The demo's PostgreSQL database belongs to the application and is not a broker store.
+```bash
+REDIS_VERSION=4.8.1 bin/validate-client
+REDIS_VERSION=5.4.1 bin/validate-client
+```
 
-`bin/validate backend` checks Reverb 1.12.0 directly through the Pusher protocol. Ordinary channels deliver live events without replaying earlier broadcasts. A cache channel sends a late subscriber only the latest event while another subscriber keeps the channel occupied. Reverb deletes the cached event when the last subscriber leaves and discards publications to an empty channel. Presence channels expose current members and remove a user after their final connection closes.
+These checks build the fork revision pinned in `Gemfile.lock` and use its packaged Redis dependency.
 
-Those cache semantics do not provide a retained message log or session store. A Rails memory cache would also disappear when all Rails processes restart. Recovery across that loss cannot be guaranteed by the current backend contract. Extended-protocol handling and translation of Pusher presence remain implementation work. Pusher's presence support does not make those gates pass automatically. All three gates remain required and failing.
+### Reverb and optional Valkey
 
-AnyCable itself offers memory, NATS JetStream, and Redis broker storage through AnyCable Pro. It does not use the Rails SQL database for broker history by default. Its memory broker also loses data on restart. Reusing SQL would require a custom storage adapter and tables, which the Pusher-only constraint excludes. See [AnyCable broker storage](https://docs.anycable.io/anycable-go/reliable_streams#cache-backends), [client reliability](https://docs.anycable.io/js/reliability), and [broker presence](https://docs.anycable.io/anycable-go/presence).
+Live delivery, protocol negotiation, and presence use Reverb with the six `PUSHER_*` variables. Retained history uses Cloud's injected `REDIS_URL`, including apps using only AnyCable's JavaScript client. It can also reuse an application's existing AnyCable Redis configuration. The gem provides its Redis client dependency. It adds no SQL tables, NATS service, or bridge-specific application configuration.
+
+The cache holds at most 100 messages per stream. Each publication renews the stream's five-minute expiry. Rails authenticates and subscribes again on reconnection, then replays available stream messages. History is rejected when its epoch changes, its requested offsets have been evicted, or its retained log is unavailable. Applications can use the SDK notification to reload their current state.
+
+`bin/validate backend` checks Reverb directly through the Pusher protocol. Its cache channels keep only the latest event while occupied, delete it when the last subscriber leaves, and discard publications to empty channels. Those semantics cannot replace a retained message log across worker loss. Presence channels do provide the membership events used by the bridge.
+
+The local fixture verifies authenticated TLS access and retained stream recovery. Verify managed-cache connectivity and deployment behavior during the Cloud trial.
+
+See [AnyCable reliability](https://docs.anycable.io/js/reliability), [presence](https://docs.anycable.io/anycable-go/presence), and [Valkey compatibility](https://valkey.io/topics/migration/).
 
 ## Prepare a Cloud deployment
 
-No Cloud resources have been created and nothing has been deployed. Complete the release gates first.
+No Cloud resources have been created and nothing has been deployed. Run the local validation commands before a Cloud trial.
 
-Push this demo to a Git repository, connect that repository to Cloud, select its Rails stack, and attach PostgreSQL and managed WebSockets. Keep the locked fork dependency; do not copy the local gem or use a Bundler path override. Cloud's Rails integration supplies `DATABASE_URL`, `SECRET_KEY_BASE`, and the six `PUSHER_*` variables.
+Push this demo to a Git repository, connect that repository to Cloud, select its Rails stack, and attach PostgreSQL and managed WebSockets. Keep the locked fork dependency; do not copy the local gem or use a Bundler path override. Cloud's Rails integration supplies `DATABASE_URL`, `SECRET_KEY_BASE`, and the six `PUSHER_*` variables. Attach Valkey to exercise retained history using the injected `REDIS_URL`.
 
 Use these application commands:
 
