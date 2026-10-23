@@ -8,8 +8,10 @@ function setup() {
     if (!document.querySelector('#messages')) return;
     const anycable = new URL(location.href).searchParams.get('client') === 'anycable';
     const protocol = new URL(location.href).searchParams.get("protocol");
-    const consumer = anycable ? createCable(protocol ? { protocol } : {}) : createConsumer();
-    const state = { consumer, messages: [], extras: new Map(), readiness: new Map(), connectedCount: 0, client: anycable ? 'AnyCable' : 'Action Cable' };
+    const options = protocol ? { protocol } : {};
+    if (new URL(location.href).searchParams.has('pongs')) options.protocolOptions = { pongs: true };
+    const consumer = anycable ? createCable(options) : createConsumer();
+    const state = { consumer, messages: [], extras: new Map(), readiness: new Map(), connectedCount: 0, historyMisses: 0, client: anycable ? 'AnyCable' : 'Action Cable' };
     const status = document.querySelector('#status');
 
     function receive(message) {
@@ -42,6 +44,12 @@ function setup() {
             subscription.on('connect', connected);
             subscription.on('disconnect', disconnected);
             subscription.on('message', receive);
+            subscription.on('presence', message => receive({ kind: 'presence', text: JSON.stringify(message) }));
+            subscription.on('info', event => {
+                if (event.type !== 'history_not_found') return;
+                state.historyMisses += 1;
+                receive({ kind: 'history', text: 'History is unavailable. Reload application data before continuing.' });
+            });
             subscription.on('close', disconnected);
             state.readiness.set(subscription, ready);
             return subscription;
@@ -97,6 +105,22 @@ function setup() {
     bind('model', async () => { await state.extraReady('ModelChannel'); return state.request('/broadcast', { text: text(), kind: 'model' }); });
     bind('timer', () => state.extra('TimerChannel'));
     bind('presence', () => state.extra('PresenceChannel'));
+    async function brokerPresence() {
+        if (!anycable || protocol !== 'actioncable-v1-ext-json') throw new Error('Choose AnyCable extended to use its presence API.');
+        return state.room.presence;
+    }
+    bind('broker-presence', async () => {
+        const presence = await brokerPresence();
+        const name = document.querySelector('main').dataset.user;
+        await presence.join(name, { name });
+        receive({ kind: 'presence', text: JSON.stringify(await presence.info()) });
+    });
+    bind('broker-leave', async () => (await brokerPresence()).leave());
+    bind('server-presence', async () => {
+        await brokerPresence();
+        const channel = await state.extraReady('BrokerPresenceChannel');
+        receive({ kind: 'server presence', text: JSON.stringify(await channel.presence.info()) });
+    });
     bind('worker', () => {
         if (state.worker) return state.worker.postMessage({ command: 'perform', text: text() });
         state.worker = new Worker(document.querySelector('meta[name="native-worker-url"]').content, { type: 'module' });

@@ -2,10 +2,10 @@
   <small>RAILS ON LARAVEL CLOUD</small>
   <h1>WebSockets lab</h1>
   <p class="muted">Real Rails channels. Real Reverb. Two replicas and four Puma workers behind a reverse proxy.</p>
-  <div class="row"><span class="badge" id="status">Connecting</span><span><%= @user.name %></span><a href="/?client=actioncable" data-turbo="false">Action Cable</a><a href="/?client=anycable" data-turbo="false">AnyCable</a><%= link_to "Turbo navigation", about_path %></div>
+  <div class="row"><span class="badge" id="status">Connecting</span><span><%= @user.name %></span><a href="/?client=actioncable" data-turbo="false">Action Cable</a><a href="/?client=anycable" data-turbo="false">AnyCable</a><a href="/?client=anycable&amp;protocol=actioncable-v1-ext-json" data-turbo="false">AnyCable extended</a><%= link_to "Turbo navigation", about_path %></div>
   <section class="panel">
     <label for="message">Message</label><div class="row"><input id="message" value="Hello from Rails" maxlength="1000"><button id="send">Channel action</button><button id="broadcast">Controller broadcast</button><button id="direct">Direct reply</button></div>
-    <div class="row"><button id="custom">Custom coder</button><button id="model">Model stream</button><button id="whisper">Whisper action</button><button id="timer">Start timer</button><button id="presence">Rails presence</button><button id="worker">Web Worker client</button></div>
+    <div class="row"><button id="custom">Custom coder</button><button id="model">Model stream</button><button id="whisper">Whisper action</button><button id="timer">Start timer</button><button id="presence">Rails presence</button><button id="broker-presence">AnyCable presence</button><button id="broker-leave">Leave presence</button><button id="server-presence">Server presence</button><button id="worker">Web Worker client</button></div>
     <div class="row"><button id="unsubscribe">Unsubscribe</button><button id="subscribe">Subscribe</button><button id="reconnect">Reconnect</button><button id="revoke">Revoke my access</button><button id="logout">Log out</button></div>
   </section>
   <div class="grid"><section class="panel"><h2>Live messages</h2><ul id="messages"></ul></section><section class="panel"><h2>Model broadcasts</h2><p class="muted">Creates a report and receives a Turbo Stream from the model callback.</p><button id="report">Create report</button><%= turbo_stream_from @user %><div id="reports"><%= render @reports %></div></section></div>

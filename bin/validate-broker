@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+docker compose exec -T rails1 bundle exec ruby test/broker_test.rb
+bin/validate replay
+bin/validate readiness
+bin/validate-faults --broker

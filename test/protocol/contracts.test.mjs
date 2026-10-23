@@ -181,3 +181,70 @@ test('logout invalidates the Rails connection while an old backend subscription 
         assert.equal((await subscriber.command({ command: 'lease' })).status, 410);
     } finally { await subscriber.close(); await publisher.close(); }
 });
+
+
+test('extended-protocol presence tracks shared membership across workers using Reverb', async () => {
+    const observer = await client({ protocol: 'actioncable-v1-ext-json' });
+    const first = await client({ protocol: 'actioncable-v1-ext-json' });
+    const second = await client({ protocol: 'actioncable-v1-ext-json' });
+    try {
+        const parameters = { room: 'demo' };
+        const { identifier } = await observer.subscribe('AnycableRoomChannel', parameters);
+        await first.subscribe('AnycableRoomChannel', parameters);
+        await second.subscribe('AnycableRoomChannel', parameters);
+        async function info() {
+            const count = observer.frames.length;
+            assert.equal((await observer.command({ command: 'presence', identifier })).status, 200);
+            return until(() => observer.frames.slice(count).find(frame => frame.type === 'presence' && frame.message.type === 'info'), 'presence snapshot');
+        }
+        assert.deepEqual((await info()).message.records, []);
+        const presence = { id: 'member', info: { name: 'Member' } };
+        for (const member of [first, second]) assert.equal((await member.command({ command: 'join', identifier, presence })).status, 200);
+        await until(async () => (await info()).message.total === 1, 'deduplicated membership');
+        assert.equal((await first.command({ command: 'leave', identifier })).status, 200);
+        assert.equal((await info()).message.total, 1);
+        await second.post('/revoke');
+        await until(async () => (await info()).message.total === 0, 'revoked presence removed');
+        assert.equal(second.socket.readyState, WebSocket.OPEN);
+        const joins = observer.frames.filter(frame => frame.type === 'presence' && frame.message.type === 'join');
+        assert.equal(joins.length, 1);
+        assert.deepEqual(joins[0].message.info, { name: 'Member' });
+        assert.equal((await observer.command({ command: 'presence', identifier: JSON.stringify({ channel: 'RoomChannel', room: 'forbidden' }) })).status, 400);
+    } finally { await observer.close(); await first.close(); await second.close(); }
+});
+
+
+test('Ruby AnyCable presence helpers work without changing channel syntax', async () => {
+    const observer = await client({ protocol: 'actioncable-v1-ext-json' });
+    const member = await client({ protocol: 'actioncable-v1-ext-json' });
+    try {
+        const { identifier } = await observer.subscribe('BrokerPresenceChannel', {});
+        await member.subscribe('BrokerPresenceChannel', {});
+        async function total() {
+            const count = observer.frames.length;
+            assert.equal((await observer.command({ command: 'presence', identifier })).status, 200);
+            const response = await until(() => observer.frames.slice(count).find(frame => frame.type === 'presence' && frame.message.type === 'info'), 'Ruby presence');
+            return response.message.total;
+        }
+        await until(async () => await total() === 2, 'two server-side members');
+        await member.command({ command: 'unsubscribe', identifier });
+        await until(async () => await total() === 1, 'server-side leave');
+    } finally { await observer.close(); await member.close(); }
+});
+
+
+test('a frame exceeding the backend limit closes its subscriber without disrupting other clients', async () => {
+    const ordinary = await client();
+    const oversized = await client();
+    try {
+        const first = await ordinary.subscribe();
+        await oversized.subscribe('RoomChannel', { room: 'demo', padding: 'p'.repeat(5000) });
+        const text = 'x'.repeat(5000);
+        assert.equal((await ordinary.perform(first.identifier, 'speak', { text })).status, 200);
+        await until(() => ordinary.messages(first.identifier).some(message => message.text === text), 'ordinary delivery');
+        const frame = await until(() => oversized.frames.find(frame => frame.type === 'disconnect'), 'oversized frame disconnect');
+        assert.equal(frame.reason, 'message_too_large');
+        assert.equal(frame.reconnect, false);
+        assert.equal((await ordinary.command({ command: 'lease' })).status, 200);
+    } finally { await ordinary.close(); await oversized.close(); }
+});

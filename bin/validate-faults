@@ -12,7 +12,14 @@ results.mkdir(parents=True, exist_ok=True)
 request = results / "fault-request.json"
 if request.exists():
     request.unlink()
-command = ["docker", "run", "--rm", "--network", "host", "-e", "REPORT_NAME=faults", "-e", f'DEMO_URL={os.environ.get("DEMO_URL", "https://cloud-ws.localhost:3443")}', "-v", f"{root}/test:/tests/test:ro", "-v", f"{root}/playwright.config.mjs:/tests/playwright.config.mjs:ro", "-v", f"{results}:/results", "rails-cloud-websockets-tests:local", "npx", "playwright", "test", "test/browser/faults.spec.mjs", "--max-failures=1", *sys.argv[1:]]
+broker = "--broker" in sys.argv
+arguments = [arg for arg in sys.argv[1:] if arg != "--broker"]
+file = "test/readiness/recovery.spec.mjs" if broker else "test/browser/faults.spec.mjs"
+command = ["docker", "run", "--rm", "--network", "host", "-e", f"REPORT_NAME={'broker-faults' if broker else 'faults'}", "-e", f'DEMO_URL={os.environ.get("DEMO_URL", "https://cloud-ws.localhost:3443")}', "-v", f"{root}/test:/tests/test:ro", "-v", f"{root}/playwright.config.mjs:/tests/playwright.config.mjs:ro", "-v", f"{results}:/results", "rails-cloud-websockets-tests:local", "npx", "playwright", "test", file, "--max-failures=1", *arguments]
+if broker:
+    position = command.index("rails-cloud-websockets-tests:local")
+    command[position:position] = ["-v", f"{root}/playwright.readiness.config.mjs:/tests/playwright.readiness.config.mjs:ro"]
+    command += ["--config=playwright.readiness.config.mjs"]
 process = subprocess.Popen(command, cwd=root)
 handled = set()
 try:
@@ -20,8 +27,8 @@ try:
         if request.exists():
             data = json.loads(request.read_text())
             if data["id"] not in handled:
-                if data["service"] == "reverb":
-                    subprocess.run(["docker", "compose", "restart", "reverb"], cwd=root, check=True)
+                if data["service"] in ["reverb", "valkey"]:
+                    subprocess.run(["docker", "compose", "-f", "compose.yaml", "-f", "compose.valkey.yaml", "restart", data["service"]], cwd=root, check=True)
                 elif data["service"] == "workers":
                     for replica in ["rails1", "rails2"]:
                         subprocess.run(["docker", "compose", "exec", "-T", replica, "ruby", "-e", 'Dir["/proc/[0-9]*/cmdline"].each { |file| pid = file.split("/")[2].to_i; text = File.binread(file) rescue next; Process.kill("KILL", pid) if pid != Process.pid && text.include?("puma: cluster worker") }'], cwd=root, check=True)
