@@ -138,7 +138,6 @@ function setup() {
     bind('revoke', () => state.request('/revoke'));
     bind('logout', () => state.request('/logout'));
     bind('report', () => state.request('/reports', { text: text() }));
-    document.querySelector('#details').textContent = `${state.client}. Session cookies and the standard channel APIs authenticate this connection.`;
     state.destroy = () => { consumer.disconnect(); state.worker?.terminate(); };
     lab = state;
     window.lab = state;

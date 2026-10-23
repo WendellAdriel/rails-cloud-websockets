@@ -1,0 +1,9 @@
+<article class="action-card <%= "action-card--#{local_assigns[:tone]}" if local_assigns[:tone] %>">
+  <h3><%= title %></h3>
+  <p id="<%= id %>-description"><%= description %></p>
+  <% if local_assigns[:href] %>
+    <%= link_to label, href, class: "button", aria: { describedby: "#{id}-description" } %>
+  <% else %>
+    <button id="<%= id %>" class="button" aria-describedby="<%= id %>-description"><%= label %></button>
+  <% end %>
+</article>

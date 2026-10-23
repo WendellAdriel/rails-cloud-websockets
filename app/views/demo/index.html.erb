@@ -1,13 +1,105 @@
+<% anycable = params[:client] == "anycable" %>
+<% extended = anycable && params[:protocol] == "actioncable-v1-ext-json" %>
 <main data-user="<%= @user.name %>">
-  <small>RAILS ON LARAVEL CLOUD</small>
-  <h1>WebSockets lab</h1>
-  <p class="muted">Real Rails channels. Real Reverb. Two replicas and four Puma workers behind a reverse proxy.</p>
-  <div class="row"><span class="badge" id="status">Connecting</span><span><%= @user.name %></span><a href="/?client=actioncable" data-turbo="false">Action Cable</a><a href="/?client=anycable" data-turbo="false">AnyCable</a><a href="/?client=anycable&amp;protocol=actioncable-v1-ext-json" data-turbo="false">AnyCable extended</a><%= link_to "Turbo navigation", about_path %></div>
-  <section class="panel">
-    <label for="message">Message</label><div class="row"><input id="message" value="Hello from Rails" maxlength="1000"><button id="send">Channel action</button><button id="broadcast">Controller broadcast</button><button id="direct">Direct reply</button></div>
-    <div class="row"><button id="custom">Custom coder</button><button id="model">Model stream</button><button id="whisper">Whisper action</button><button id="timer">Start timer</button><button id="presence">Rails presence</button><button id="broker-presence">AnyCable presence</button><button id="broker-leave">Leave presence</button><button id="server-presence">Server presence</button><button id="worker">Web Worker client</button></div>
-    <div class="row"><button id="unsubscribe">Unsubscribe</button><button id="subscribe">Subscribe</button><button id="reconnect">Reconnect</button><button id="revoke">Revoke my access</button><button id="logout">Log out</button></div>
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Laravel Cloud / Rails demo</p>
+      <h1>WebSockets lab<span class="title-dot">.</span></h1>
+    </div>
+    <div class="session">
+      <span class="badge" id="status" role="status">Connecting</span>
+      <span class="guest"><%= @user.name %></span>
+    </div>
+  </header>
+
+  <nav class="client-picker" aria-label="WebSocket client">
+    <span class="client-picker-label">Client</span>
+    <div class="segmented-control">
+      <a href="/?client=actioncable" data-turbo="false" aria-current="<%= anycable ? "false" : "page" %>">Action Cable</a>
+      <a href="/?client=anycable" data-turbo="false" aria-current="<%= anycable && !extended ? "page" : "false" %>">AnyCable</a>
+      <a href="/?client=anycable&amp;protocol=actioncable-v1-ext-json" data-turbo="false" aria-current="<%= extended ? "page" : "false" %>">AnyCable extended</a>
+    </div>
+  </nav>
+
+  <section class="composer" aria-labelledby="message-label">
+    <div>
+      <label for="message" id="message-label">Your message</label>
+      <p>The messaging actions below use this text.</p>
+    </div>
+    <input id="message" value="Hello from Rails" maxlength="1000" autocomplete="off">
   </section>
-  <div class="grid"><section class="panel"><h2>Live messages</h2><ul id="messages"></ul></section><section class="panel"><h2>Model broadcasts</h2><p class="muted">Creates a report and receives a Turbo Stream from the model callback.</p><button id="report">Create report</button><%= turbo_stream_from @user %><div id="reports"><%= render @reports %></div></section></div>
-  <section class="panel"><h2>What runs here</h2><p>The application uses the official clients and normal Rails channel APIs. The gem is installed from the feature branch on GitHub. No bridge initializer or cable.yml changes.</p><p id="details" class="muted"></p></section>
+
+  <section class="action-section" aria-labelledby="messaging-heading">
+    <div class="section-heading"><h2 id="messaging-heading">Messaging</h2><p>Send a message and watch it arrive below.</p></div>
+    <div class="action-grid">
+      <%= render "action_card", id: "send", title: "Channel action", description: "Call a Rails channel action and broadcast to everyone in the room.", label: "Send message", tone: "primary" %>
+      <% [
+        ["broadcast", "Controller broadcast", "Publish from an HTTP request to everyone subscribed to the room.", "Broadcast message"],
+        ["direct", "Direct reply", "Receive a reply on this connection. Other connections will not receive it.", "Send direct reply"],
+        ["custom", "Custom coder", "Run the message through a custom stream callback that converts it to uppercase.", "Try custom coder"],
+        ["model", "Model stream", "Broadcast to a model stream scoped to your guest account.", "Send to model stream"],
+        ["whisper", "Client event", "Send a whisper through a stream that explicitly allows client events.", "Send whisper"]
+      ].each do |id, title, description, label| %>
+        <%= render "action_card", id: id, title: title, description: description, label: label %>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="messages-panel" aria-labelledby="messages-heading">
+    <div class="messages-header">
+      <div><h2 id="messages-heading">Live messages</h2><p>Newest messages appear first.</p></div>
+      <span class="log-label">Event log</span>
+    </div>
+    <ul id="messages" role="log" aria-label="Live messages" aria-live="polite" aria-relevant="additions"></ul>
+  </section>
+
+  <section class="action-section" aria-labelledby="presence-heading">
+    <div class="section-heading"><h2 id="presence-heading">Presence</h2><p>See who is connected and how membership is managed.</p></div>
+    <div class="action-grid">
+      <%= render "action_card", id: "presence", title: "Rails presence", description: "Subscribe to the app's presence channel and receive the current guest count.", label: "Check Rails presence" %>
+      <% [
+        ["broker-presence", "Join presence", "Join with the AnyCable presence API and list the room's members.", "Join and list members"],
+        ["broker-leave", "Leave presence", "Remove your membership from the room without disconnecting.", "Leave presence"],
+        ["server-presence", "Server presence", "Let a Rails channel join your guest account using Ruby's presence helpers.", "Join from the server"]
+      ].each do |id, title, description, label| %>
+        <%= render "action_card", id: id, title: title, description: "#{description} Requires AnyCable extended.", label: label %>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="action-section" aria-labelledby="connections-heading">
+    <div class="section-heading"><h2 id="connections-heading">Connections</h2><p>Explore subscriptions, reconnection, and other clients.</p></div>
+    <div class="action-grid">
+      <% [
+        ["unsubscribe", "Unsubscribe", "Leave the main room. The connection and other subscriptions stay open.", "Leave the room"],
+        ["subscribe", "Subscribe", "Join the main room again after unsubscribing.", "Join the room"],
+        ["reconnect", "Reconnect", "Close and reopen the connection, then restore its subscriptions.", "Reconnect"],
+        ["timer", "Periodic messages", "Start a server timer that sends a message every two seconds.", "Start timer"],
+        ["worker", "Web Worker client", "Connect a separate client from a Web Worker and send your message.", "Start worker client"]
+      ].each do |id, title, description, label| %>
+        <%= render "action_card", id: id, title: title, description: description, label: label %>
+      <% end %>
+      <%= render "action_card", id: "navigation", title: "Page navigation", description: "Visit another page and return to check the connection across Turbo navigation.", label: "Turbo navigation", href: about_path %>
+    </div>
+  </section>
+
+  <section class="reports-panel" aria-labelledby="reports-heading">
+    <div class="report-action">
+      <h2 id="reports-heading">Model broadcasts</h2>
+      <p>Create a report using your message. The model callback updates this panel through a Turbo Stream.</p>
+      <button id="report" class="button" aria-describedby="reports-heading">Create report</button>
+    </div>
+    <div class="report-results">
+      <%= turbo_stream_from @user %>
+      <div id="reports"><%= render @reports %></div>
+    </div>
+  </section>
+
+  <section class="action-section" aria-labelledby="access-heading">
+    <div class="section-heading"><h2 id="access-heading">Access</h2><p>Check how a session ends and access is revoked.</p></div>
+    <div class="action-grid action-grid--two">
+      <%= render "action_card", id: "revoke", title: "Revoke access", description: "Remove this guest's access and disconnect its active sessions. Log out to start fresh.", label: "Revoke my access", tone: "danger" %>
+      <%= render "action_card", id: "logout", title: "End your session", description: "Log out and close your connections. Choose a client above to start a new guest session.", label: "Log out" %>
+    </div>
+  </section>
 </main>
