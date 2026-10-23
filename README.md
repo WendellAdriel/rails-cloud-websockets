@@ -78,6 +78,7 @@ Individual suites:
 
 ```bash
 bin/validate protocol
+bin/validate backend
 bin/validate browser
 bin/validate engines
 bin/validate-faults
@@ -125,6 +126,7 @@ The 2026-10-23 run used fork commit `bd17ca6` and the Git-installed production i
 | Repeated load | Six waves of 200 clients deliver 12,000 messages with zero duplicates; connections return to their starting level or below. |
 | Delivery latency | Local p95 is 369-477 ms across the six waves; the largest observed delivery is 570 ms. |
 | Memory | After the sixth wave, Rails container RSS is approximately 394 and 400 MiB; Reverb uses 40 MiB. RSS remains allocated after connection cleanup. |
+| Pusher backend capabilities | 4 checks pass over HTTP and HTTPS, covering live delivery, cache retention, and presence membership. |
 | AnyCable broker gates | 3 fail at extended-protocol negotiation. |
 
 These short runs measure this lab. They do not establish a production capacity limit or a long-term memory plateau. Raw per-wave Docker samples and worker counts are retained in `.localfiles/results/load-wave-*.json`.
@@ -150,7 +152,15 @@ These checks must pass before claiming full AnyCable feature parity. The bridge 
 
 The release gates require extended-protocol connections, offline catch-up, and the presence SDK API. All three currently stop at extended-protocol negotiation; recovery and presence assertions must then pass once that handshake is implemented. The gates are not skipped or counted as passing tests.
 
-Reverb supplies live Pusher pub/sub. Implementing the additional broker behavior requires a shared-state design; whether the bridge may use an application's existing Rails database remains an open decision. See [AnyCable reliability](https://docs.anycable.io/js/reliability) and [broker presence](https://docs.anycable.io/anycable-go/presence).
+### Pusher-only integration
+
+The integration must use only the six injected `PUSHER_*` variables. It must not add database tables or require Redis, NATS, or another storage service. The demo's PostgreSQL database belongs to the application and is not a broker store.
+
+`bin/validate backend` checks Reverb 1.12.0 directly through the Pusher protocol. Ordinary channels deliver live events without replaying earlier broadcasts. A cache channel sends a late subscriber only the latest event while another subscriber keeps the channel occupied. Reverb deletes the cached event when the last subscriber leaves and discards publications to an empty channel. Presence channels expose current members and remove a user after their final connection closes.
+
+Those cache semantics do not provide a retained message log or session store. A Rails memory cache would also disappear when all Rails processes restart. Recovery across that loss cannot be guaranteed by the current backend contract. Extended-protocol handling and translation of Pusher presence remain implementation work. Pusher's presence support does not make those gates pass automatically. All three gates remain required and failing.
+
+AnyCable itself offers memory, NATS JetStream, and Redis broker storage through AnyCable Pro. It does not use the Rails SQL database for broker history by default. Its memory broker also loses data on restart. Reusing SQL would require a custom storage adapter and tables, which the Pusher-only constraint excludes. See [AnyCable broker storage](https://docs.anycable.io/anycable-go/reliable_streams#cache-backends), [client reliability](https://docs.anycable.io/js/reliability), and [broker presence](https://docs.anycable.io/anycable-go/presence).
 
 ## Prepare a Cloud deployment
 
