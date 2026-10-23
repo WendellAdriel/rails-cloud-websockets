@@ -19,7 +19,7 @@ command = ["docker", "run", "--rm", "--network", "host", "-e", f"REPORT_NAME={'b
 if broker:
     position = command.index("rails-cloud-websockets-tests:local")
     command[position:position] = ["-v", f"{root}/playwright.readiness.config.mjs:/tests/playwright.readiness.config.mjs:ro"]
-    command += ["--config=playwright.readiness.config.mjs"]
+    command += ["--config=playwright.readiness.config.mjs", "--project=chromium"]
 process = subprocess.Popen(command, cwd=root)
 handled = set()
 try:

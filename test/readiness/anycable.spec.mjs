@@ -17,6 +17,7 @@ test('release gate: reconnect catches up broadcasts missed while the browser was
         await senderPage.goto(`${process.env.DEMO_URL || 'https://cloud-ws.localhost:3443'}/`);
         await expect(senderPage.locator('#status')).toHaveAttribute('data-connected', 'true');
         await context.setOffline(true);
+        await page.locator('#reconnect').click();
         await expect(page.locator('#status')).toHaveAttribute('data-connected', 'false');
         const text = `missed-${Date.now()}`;
         await senderPage.locator('#message').fill(text);
