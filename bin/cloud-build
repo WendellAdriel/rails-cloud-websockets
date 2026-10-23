@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+npm ci
+npm run build
+SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=production bundle exec rails assets:precompile

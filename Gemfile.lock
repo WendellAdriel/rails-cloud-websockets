@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/WendellAdriel/laravel-cloud-rails.git
-  revision: ebacfffa6997b5248c7d46961a4a77c12454d4c1
+  revision: bd17ca6b3df9f620a70a3b01a5dd41cf04e8c5f3
   branch: feat/cloud-websockets
   specs:
     rails-on-cloud (0.0.0)
